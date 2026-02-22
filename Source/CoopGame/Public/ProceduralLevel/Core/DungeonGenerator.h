@@ -90,11 +90,14 @@ protected:
     bool bExitSpawned = false;
 
     UPROPERTY(EditAnywhere, Category = "Puzzle")
-    TSubclassOf<AActivator> ActivatorClass;
+    TSubclassOf<AActor> ActivatorClass;
 
     UPROPERTY(EditAnywhere, Category = "Puzzle")
     int32 MaxAmountOfActivators = 3;
 
+    UPROPERTY(EditAnywhere, Category = "Puzzle")
+    TArray<AActor*> ActivatorsGenerated;
+    
     TArray<FTransform> ActivatorSpawnersLocations;
     
     FVector StartLocation;

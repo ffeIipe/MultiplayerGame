@@ -8,16 +8,14 @@ void ACoopLobbyGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 
-	const int32 NumberOfPlayers = GetNumPlayers();
-
-	UE_LOG(LogTemp, Warning, TEXT("Jugador conectado. Total: %d"), NumberOfPlayers);
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, "Player connected. Total: " + GetNumPlayers());
 }
 
 void ACoopLobbyGameMode::Logout(AController* Exiting)
 {
 	Super::Logout(Exiting);
-	const int32 NumberOfPlayers = GetNumPlayers();
-	UE_LOG(LogTemp, Warning, TEXT("Jugador desconectado. Restantes: %d"), NumberOfPlayers);
+	
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, "Player connected. Total: " + GetNumPlayers());
 }
 
 void ACoopLobbyGameMode::StartGame()

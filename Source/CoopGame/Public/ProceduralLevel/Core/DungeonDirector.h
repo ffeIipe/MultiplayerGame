@@ -26,7 +26,7 @@ protected:
 	int32 VisibilityDepth = 3;
 
 	UPROPERTY(EditAnywhere, Category = "AI")
-	TSubclassOf<ACharacter> ZombieClass;
+	TArray<TSubclassOf<ACharacter>> ZombiesClasses;
 
 	UPROPERTY(EditAnywhere, Category = "AI")
 	int32 MaxActiveZombies = 10;

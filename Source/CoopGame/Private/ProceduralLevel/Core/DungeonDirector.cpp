@@ -1,4 +1,7 @@
 #include "ProceduralLevel/Core/DungeonDirector.h"
+
+#include "Algo/RandomShuffle.h"
+#include "CoopCharacters/AI/AgentController.h"
 #include "GameFramework/Character.h"
 
 ADungeonDirector::ADungeonDirector()
@@ -33,10 +36,8 @@ void ADungeonDirector::InitializeDungeon(TArray<ADungeonRoomBase*> AllRooms)
         }
     }
     
-    // Activar el primer cuarto manualmente si existe y hay culling
     if (GeneratedRooms.Num() > 0 && bEnableRoomCulling)
     {
-        // Forzamos la entrada al primer cuarto para encenderlo a él y sus vecinos
         OnRoomEntered(GeneratedRooms[0]);
     }
 }
@@ -47,7 +48,6 @@ void ADungeonDirector::OnRoomEntered(ADungeonRoomBase* NewRoom)
 
     CurrentPlayerRoom = NewRoom;
     
-    // Solo actualizamos visibilidad si el sistema está activado
     if (bEnableRoomCulling)
     {
         UpdateVisibility();
@@ -60,13 +60,11 @@ void ADungeonDirector::UpdateVisibility()
 {
     if (!CurrentPlayerRoom) return;
 
-    // 1. Apagar TODOS los cuartos primero (Reset)
     for (ADungeonRoomBase* Room : GeneratedRooms)
     {
         if (Room) Room->SetRoomActive(false);
     }
 
-    // 2. Encender recursivamente usando la variable 'VisibilityDepth'
     SetRoomVisibilityRecursive(CurrentPlayerRoom, VisibilityDepth);
 }
 
@@ -74,10 +72,8 @@ void ADungeonDirector::SetRoomVisibilityRecursive(ADungeonRoomBase* Room, int32 
 {
     if (!Room || Depth < 0) return;
 
-    // Encender este cuarto
     Room->SetRoomActive(true);
 
-    // Si aun nos queda profundidad, encender vecinos
     if (Depth > 0)
     {
         for (ADungeonRoomBase* Neighbor : Room->GetConnectedNeighbors())
@@ -89,10 +85,26 @@ void ADungeonDirector::SetRoomVisibilityRecursive(ADungeonRoomBase* Room, int32 
 
 void ADungeonDirector::CleanupDeadZombies()
 {
+    if (!CurrentPlayerRoom) return;
+
+    FVector PlayerGeneralLocation = CurrentPlayerRoom->GetActorLocation();
+
+    constexpr float MaxZombieDistance = 4000.0f; 
+
     for (int32 i = ActiveZombies.Num() - 1; i >= 0; --i)
     {
-        if (!ActiveZombies[i] || ActiveZombies[i]->IsActorBeingDestroyed())
+        ACharacter* Zombie = ActiveZombies[i];
+
+        if (!Zombie || Zombie->IsActorBeingDestroyed()/* || Zombie->IsDead()*/)
         {
+            ActiveZombies.RemoveAt(i);
+            continue;
+        }
+
+        float DistToPlayer = FVector::Dist(Zombie->GetActorLocation(), PlayerGeneralLocation);
+        if (DistToPlayer > MaxZombieDistance)
+        {
+            Zombie->Destroy();
             ActiveZombies.RemoveAt(i);
         }
     }
@@ -100,7 +112,7 @@ void ADungeonDirector::CleanupDeadZombies()
 
 void ADungeonDirector::ManageEnemySpawning()
 {
-    if (!CurrentPlayerRoom || !ZombieClass) return;
+    if (!CurrentPlayerRoom || ZombiesClasses.Num() <= 0) return;
 
     CleanupDeadZombies();
 
@@ -109,24 +121,44 @@ void ADungeonDirector::ManageEnemySpawning()
 
     if (SlotsAvailable <= 0) return;
 
-    for (TArray<ADungeonRoomBase*> TargetRooms = CurrentPlayerRoom->GetConnectedNeighbors(); ADungeonRoomBase* Room : TargetRooms)
+    TArray<FTransform> AvailableSpawns;
+    TArray<ADungeonRoomBase*> TargetRooms = CurrentPlayerRoom->GetConnectedNeighbors();
+    
+    // Opcional: También podrías agregar los spawns del CurrentPlayerRoom aquí si quieres
+    
+    for (const ADungeonRoomBase* Room : TargetRooms)
     {
-        if (SlotsAvailable <= 0) break;
-        if (!Room) continue;
-
-        TArray<FTransform> SpawnPoints = Room->GetSpawnPoints();
-        
-        for (const FTransform& SP : SpawnPoints)
+        if (Room)
         {
-            if (SlotsAvailable <= 0) break;
+            AvailableSpawns.Append(Room->GetSpawnPoints());
+        }
+    }
 
-            FActorSpawnParameters SpawnParams;
-            SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
+    if (AvailableSpawns.Num() == 0) return;
 
-            if (ACharacter* NewZombie = GetWorld()->SpawnActor<ACharacter>(ZombieClass, SP, SpawnParams))
+    Algo::RandomShuffle(AvailableSpawns);
+
+    int32 SpawnsToPerform = FMath::Min(SlotsAvailable, AvailableSpawns.Num());
+
+    for (int32 i = 0; i < SpawnsToPerform; i++)
+    {
+        FActorSpawnParameters SpawnParams;
+        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
+
+        int32 RandomIndex = FMath::RandRange(0, ZombiesClasses.Num() - 1);
+        auto RandomClass = ZombiesClasses[RandomIndex];
+
+        if (ACharacter* NewZombie = GetWorld()->SpawnActor<ACharacter>(RandomClass, AvailableSpawns[i], SpawnParams))
+        {
+            ActiveZombies.Add(NewZombie);
+
+            const APlayerController* PC = GetWorld()->GetFirstPlayerController();
+            if (PC && PC->GetPawn())
             {
-                ActiveZombies.Add(NewZombie);
-                SlotsAvailable--;
+                if (AAgentController* ZombieAI = Cast<AAgentController>(NewZombie->GetController()))
+                {
+                    ZombieAI->SetInitialTarget(PC->GetPawn());
+                }
             }
         }
     }

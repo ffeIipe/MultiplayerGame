@@ -87,7 +87,8 @@ void ADungeonGenerator::StepGeneration()
             {
                 if (const int32 RandomIndex = UKismetMathLibrary::RandomInteger(ActivatorSpawnersLocations.Num()); ActivatorSpawnersLocations.IsValidIndex(RandomIndex))
                 {
-                    GetWorld()->SpawnActor<AActivator>(ActivatorClass, ActivatorSpawnersLocations[RandomIndex]);
+                    AActor* Activator = GetWorld()->SpawnActor<AActor>(ActivatorClass, ActivatorSpawnersLocations[RandomIndex]);
+                    ActivatorsGenerated.Add(Activator);
                     ActivatorSpawnersLocations.RemoveAt(RandomIndex);
                 }
         
@@ -279,7 +280,7 @@ bool ADungeonGenerator::TrySpawnCapRoom(const FTransform& ExitTransform)
     TArray<TSubclassOf<ADungeonRoomBase>> Caps = CapRoomClasses;
     Algo::RandomShuffle(Caps);
 
-    for (TSubclassOf<ADungeonRoomBase> SelectedCap : Caps)
+    for (TSubclassOf SelectedCap : Caps)
     {
         if (!SelectedCap) continue;
         const ADungeonRoomBase* CDO = SelectedCap->GetDefaultObject<ADungeonRoomBase>();
@@ -394,9 +395,17 @@ void ADungeonGenerator::ResetDungeon()
         }
     }
 
+    for (AActor* Activator : ActivatorsGenerated)
+    {
+        if (Activator && !Activator->IsActorBeingDestroyed())
+        {
+            Activator->Destroy();
+        }
+    }
+
+    ActivatorSpawnersLocations.Empty();
     GeneratedRooms.Empty();
     PendingExits.Empty();
-
     
     UE_LOG(LogTemp, Warning, TEXT("[DungeonGenerator] Validacion fallida. Reiniciando generacion (Intento %d/%d)..."), CurrentRetries + 1, MaxGenerationRetries);
 }

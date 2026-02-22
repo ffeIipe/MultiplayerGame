@@ -3,25 +3,72 @@
 
 #include "CoopCharacters/AI/AgentController.h"
 
+#include "BehaviorTree/BlackboardComponent.h"
+#include "GameFramework/Character.h"
+#include "Kismet/GameplayStatics.h"
 
-// Sets default values
+
 AAgentController::AAgentController()
 {
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 }
 
-// Called when the game starts or when spawned
 void AAgentController::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	GetWorldTimerManager().SetTimer(TrackingTimerHandle, this, &AAgentController::UpdateTargetAndMove, TargetUpdateInterval, true);
 }
 
-// Called every frame
-void AAgentController::Tick(float DeltaTime)
+void AAgentController::SetInitialTarget(AActor* TargetActor)
 {
-	Super::Tick(DeltaTime);
+    CurrentTarget = TargetActor;
+    if (CurrentTarget)
+    {
+    	if (GetBlackboardComponent())
+    	{
+    		GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), CurrentTarget);
+    	}
+    }
+}
+
+void AAgentController::UpdateTargetAndMove()
+{
+    const APawn* ControlledPawn = GetPawn();
+    if (!ControlledPawn) return;
+
+    TArray<AActor*> FoundPlayers;
+    
+    UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACharacter::StaticClass(), FoundPlayers);
+
+    AActor* ClosestPlayer = nullptr;
+    float MinDistance = UE_BIG_NUMBER;
+    const FVector ZombieLocation = ControlledPawn->GetActorLocation();
+
+    for (AActor* PlayerActor : FoundPlayers)
+    {
+        const APawn* PlayerPawn = Cast<APawn>(PlayerActor);
+        if (PlayerPawn && PlayerPawn->GetController() && PlayerPawn->GetController()->IsPlayerController())
+        {
+            const float DistToPlayer = FVector::Dist(ZombieLocation, PlayerActor->GetActorLocation());
+            
+            if (DistToPlayer < MinDistance)
+            {
+                MinDistance = DistToPlayer;
+                ClosestPlayer = PlayerActor;
+            }
+        }
+    }
+
+    if (ClosestPlayer)
+    {
+        CurrentTarget = ClosestPlayer;
+        
+    	if (GetBlackboardComponent())
+    	{
+    		GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), ClosestPlayer);
+    	}
+    }
 }
 
 FGenericTeamId AAgentController::GetGenericTeamId() const
