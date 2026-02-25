@@ -1,8 +1,11 @@
 #include "ProceduralLevel/Core/DungeonDirector.h"
 
 #include "Algo/RandomShuffle.h"
+#include "Components/CoopHealthComponent.h"
 #include "CoopCharacters/AI/AgentController.h"
 #include "GameFramework/Character.h"
+#include "GenericPool/Core/ActorPoolSubsystem.h"
+#include "Engine/GameInstance.h"
 
 ADungeonDirector::ADungeonDirector()
 {
@@ -18,6 +21,23 @@ void ADungeonDirector::BeginPlay()
 void ADungeonDirector::InitializeDungeon(TArray<ADungeonRoomBase*> AllRooms)
 {
     GeneratedRooms = AllRooms;
+
+    if (const UWorld* World = GetWorld())
+    {
+        if (UActorPoolSubsystem* PoolSubsystem = World->GetSubsystem<UActorPoolSubsystem>())
+        {
+            if (ZombiesClasses.Num() > 0)
+            {
+                for (TSubclassOf ZombieClass : ZombiesClasses)
+                {
+                    if (ZombieClass)
+                    {
+                        PoolSubsystem->InitializePool(ZombieClass, ZombiesInitialAmount);
+                    }
+                }
+            }
+        }
+    }
 
     for (ADungeonRoomBase* Room : GeneratedRooms)
     {
@@ -85,18 +105,32 @@ void ADungeonDirector::SetRoomVisibilityRecursive(ADungeonRoomBase* Room, int32 
 
 void ADungeonDirector::CleanupDeadZombies()
 {
-    if (!CurrentPlayerRoom) return;
+    if (!IsValid(CurrentPlayerRoom)) return;
 
     FVector PlayerGeneralLocation = CurrentPlayerRoom->GetActorLocation();
+    const float MaxZombieDistance = 4000.0f;
 
-    constexpr float MaxZombieDistance = 4000.0f; 
+    UActorPoolSubsystem* PoolSubsystem = nullptr;
+    if (const UWorld* World = GetWorld())
+    {
+        PoolSubsystem = World->GetSubsystem<UActorPoolSubsystem>();
+    }
 
     for (int32 i = ActiveZombies.Num() - 1; i >= 0; --i)
     {
         ACharacter* Zombie = ActiveZombies[i];
 
-        if (!Zombie || Zombie->IsActorBeingDestroyed()/* || Zombie->IsDead()*/)
+        if (!IsValid(Zombie))
         {
+            ActiveZombies.RemoveAt(i);
+            continue;
+        }
+
+        bool bIsDead = !Zombie->GetComponentByClass<UCoopHealthComponent>()->IsAlive();
+
+        if (bIsDead)
+        {
+            if (PoolSubsystem) PoolSubsystem->ReturnToPool(Zombie);
             ActiveZombies.RemoveAt(i);
             continue;
         }
@@ -104,7 +138,7 @@ void ADungeonDirector::CleanupDeadZombies()
         float DistToPlayer = FVector::Dist(Zombie->GetActorLocation(), PlayerGeneralLocation);
         if (DistToPlayer > MaxZombieDistance)
         {
-            Zombie->Destroy();
+            if (PoolSubsystem) PoolSubsystem->ReturnToPool(Zombie);
             ActiveZombies.RemoveAt(i);
         }
     }
@@ -112,7 +146,7 @@ void ADungeonDirector::CleanupDeadZombies()
 
 void ADungeonDirector::ManageEnemySpawning()
 {
-    if (!CurrentPlayerRoom || ZombiesClasses.Num() <= 0) return;
+    if (!IsValid(CurrentPlayerRoom) || ZombiesClasses.Num() <= 0) return;
 
     CleanupDeadZombies();
 
@@ -124,11 +158,9 @@ void ADungeonDirector::ManageEnemySpawning()
     TArray<FTransform> AvailableSpawns;
     TArray<ADungeonRoomBase*> TargetRooms = CurrentPlayerRoom->GetConnectedNeighbors();
     
-    // Opcional: También podrías agregar los spawns del CurrentPlayerRoom aquí si quieres
-    
     for (const ADungeonRoomBase* Room : TargetRooms)
     {
-        if (Room)
+        if (IsValid(Room)) 
         {
             AvailableSpawns.Append(Room->GetSpawnPoints());
         }
@@ -140,24 +172,40 @@ void ADungeonDirector::ManageEnemySpawning()
 
     int32 SpawnsToPerform = FMath::Min(SlotsAvailable, AvailableSpawns.Num());
 
+    UActorPoolSubsystem* PoolSubsystem = nullptr;
+    
+    if (const UWorld* World = GetWorld())
+    {
+        PoolSubsystem = World->GetSubsystem<UActorPoolSubsystem>();
+    }
+
     for (int32 i = 0; i < SpawnsToPerform; i++)
     {
-        FActorSpawnParameters SpawnParams;
-        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
-
         int32 RandomIndex = FMath::RandRange(0, ZombiesClasses.Num() - 1);
         auto RandomClass = ZombiesClasses[RandomIndex];
 
-        if (ACharacter* NewZombie = GetWorld()->SpawnActor<ACharacter>(RandomClass, AvailableSpawns[i], SpawnParams))
+        if (!RandomClass) continue;
+
+        ACharacter* NewZombie = nullptr;
+
+        // 3. OBTENER DEL POOL (En lugar de SpawnActor)
+        if (PoolSubsystem)
+        {
+            NewZombie = Cast<ACharacter>(PoolSubsystem->GetActorFromPool(RandomClass, AvailableSpawns[i]));
+        }
+
+        if (IsValid(NewZombie))
         {
             ActiveZombies.Add(NewZombie);
-
-            const APlayerController* PC = GetWorld()->GetFirstPlayerController();
-            if (PC && PC->GetPawn())
+            
+            if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
             {
-                if (AAgentController* ZombieAI = Cast<AAgentController>(NewZombie->GetController()))
+                if (AActor* PlayerPawn = PC->GetPawn())
                 {
-                    ZombieAI->SetInitialTarget(PC->GetPawn());
+                    if (AAgentController* ZombieAI = Cast<AAgentController>(NewZombie->GetController()))
+                    {
+                        ZombieAI->SetInitialTarget(PlayerPawn);
+                    }
                 }
             }
         }

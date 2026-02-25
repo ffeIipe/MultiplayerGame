@@ -15,6 +15,4 @@ class COOPGAME_API UDungeonExitComponent : public UArrowComponent
 
 public:
 	UDungeonExitComponent();
-    
-	virtual void OnRegister() override;
 };

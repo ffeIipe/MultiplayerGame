@@ -27,6 +27,7 @@ void UCoopGameInstance::LoadSettings()
 		UserSettings->SetShadingQuality(0);
 		UserSettings->SetFrameRateLimit(0);
 		UserSettings->SetFoliageQuality(0);
+		UserSettings->SetFrameRateLimit(144.f);
 	}
 
 	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, "Settings successfully loaded...");

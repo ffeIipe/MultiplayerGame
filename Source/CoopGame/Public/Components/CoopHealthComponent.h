@@ -40,6 +40,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	void Revive();
 
+	UFUNCTION(BlueprintPure, Category = "Health")
+	FORCEINLINE bool IsAlive() const { return CurrentHealth > 0; }
+	
 	UFUNCTION(BlueprintPure)
 	bool IsDowned() const { return bIsDowned; }
 

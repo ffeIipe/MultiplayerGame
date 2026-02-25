@@ -226,7 +226,11 @@ bool ADungeonGenerator::TrySpawnRoomAt(const FTransform& ExitTransform, AActor* 
                 
                 if (NewRoom->GetActivatorSpawner())
                 {
-                    ActivatorSpawnersLocations.Add(NewRoom->GetActivatorSpawner()->GetComponentTransform());
+                    FTransform NewTransform = NewRoom->GetActivatorSpawner()->GetComponentTransform();
+                    FRotator NewRotation = NewRoom->GetActivatorSpawner()->GetRelativeRotation();
+
+                    NewTransform.SetRotation(NewRotation.Quaternion());
+                    ActivatorSpawnersLocations.Add(NewTransform);
                 }
                 
                 if (ParentActor)

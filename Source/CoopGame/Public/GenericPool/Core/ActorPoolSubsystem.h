@@ -5,6 +5,15 @@
 #include "Subsystems/WorldSubsystem.h"
 #include "ActorPoolSubsystem.generated.h"
 
+USTRUCT(BlueprintType)
+struct FPooledActorArray
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TArray<AActor*> Actors;
+};
+
 UCLASS()
 class COOPGAME_API UActorPoolSubsystem : public UWorldSubsystem
 {
@@ -56,5 +65,6 @@ protected:
 	AActor* RetrieveActor(const UClass* ClassType);
 
 private:
-	TMap<UClass*, TArray<AActor*>> InactivePools;
+	UPROPERTY()
+	TMap<UClass*, FPooledActorArray> InactivePools;
 };

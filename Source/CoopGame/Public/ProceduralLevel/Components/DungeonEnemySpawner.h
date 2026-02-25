@@ -11,8 +11,4 @@ class COOPGAME_API UDungeonEnemySpawner : public USceneComponent
 
 public:
 	UDungeonEnemySpawner();
-
-#if WITH_EDITOR
-	virtual void OnRegister() override;
-#endif
 };

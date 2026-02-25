@@ -14,7 +14,7 @@ void UActorPoolSubsystem::ReturnToPool(AActor* ActorToReturn)
 	ActorToReturn->SetActorEnableCollision(false);
 	ActorToReturn->SetActorTickEnabled(false);
 
-	InactivePools.FindOrAdd(ActorToReturn->GetClass()).Push(ActorToReturn);
+	InactivePools.FindOrAdd(ActorToReturn->GetClass()).Actors.Push(ActorToReturn);
 }
 
 AActor* UActorPoolSubsystem::GetActorFromPool(const TSubclassOf<AActor>& ClassToSpawn, const FTransform& SpawnTransform)
@@ -23,11 +23,11 @@ AActor* UActorPoolSubsystem::GetActorFromPool(const TSubclassOf<AActor>& ClassTo
 
 	AActor* ResultActor = nullptr;
 	
-	if (TArray<AActor*>* PoolArray = InactivePools.Find(ClassToSpawn))
+	if (FPooledActorArray* PoolStruct = InactivePools.Find(ClassToSpawn))
 	{
-		while (PoolArray->Num() > 0)
+		while (PoolStruct->Actors.Num() > 0)
 		{
-			if (AActor* Candidate = PoolArray->Pop(); IsValid(Candidate))
+			if (AActor* Candidate = PoolStruct->Actors.Pop(); IsValid(Candidate))
 			{
 				ResultActor = Candidate;
 				break;
@@ -48,7 +48,7 @@ AActor* UActorPoolSubsystem::GetActorFromPool(const TSubclassOf<AActor>& ClassTo
 		
 		ResultActor->SetActorHiddenInGame(false);
 		ResultActor->SetActorEnableCollision(true);
-		ResultActor->SetActorTickEnabled(true);
+		//ResultActor->SetActorTickEnabled(true);
 
 		if (ResultActor->Implements<UPoolableActor>())
 		{
@@ -61,13 +61,10 @@ AActor* UActorPoolSubsystem::GetActorFromPool(const TSubclassOf<AActor>& ClassTo
 
 void UActorPoolSubsystem::InitializePool(const TSubclassOf<AActor> ClassToSpawn, const int32 Quantity)
 {
-	if (!ClassToSpawn || Quantity <= 0)
-	{
-		return;
-	}
+	if (!ClassToSpawn || Quantity <= 0) return;
 
-	TArray<AActor*>& Pool = InactivePools.FindOrAdd(ClassToSpawn);
-	Pool.Reserve(Pool.Num() + Quantity);
+	FPooledActorArray& PoolStruct = InactivePools.FindOrAdd(ClassToSpawn);
+	PoolStruct.Actors.Reserve(PoolStruct.Actors.Num() + Quantity);
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -86,11 +83,11 @@ void UActorPoolSubsystem::InitializePool(const TSubclassOf<AActor> ClassToSpawn,
 
 AActor* UActorPoolSubsystem::RetrieveActor(const UClass* ClassType)
 {
-	if (TArray<AActor*>* PoolArray = InactivePools.Find(ClassType))
+	if (FPooledActorArray* PoolStruct = InactivePools.Find(ClassType))
 	{
-		while (PoolArray->Num() > 0)
+		while (PoolStruct->Actors.Num() > 0)
 		{
-			if (AActor* Candidate = PoolArray->Pop(); IsValid(Candidate))
+			if (AActor* Candidate = PoolStruct->Actors.Pop(); IsValid(Candidate))
 			{
 				Candidate->SetActorHiddenInGame(false);
 				Candidate->SetActorEnableCollision(true);
@@ -99,6 +96,6 @@ AActor* UActorPoolSubsystem::RetrieveActor(const UClass* ClassType)
 			}
 		}
 	}
-	
+    
 	return nullptr;
 }

@@ -65,7 +65,11 @@ TArray<FTransform> ADungeonRoomBase::GetSpawnPoints() const
 
 	for (const UDungeonEnemySpawner* Spawner : Spawners)
 	{
-		Points.Add(Spawner->GetComponentTransform());
+		FTransform SpawnTransform = Spawner->GetComponentTransform();
+        
+		SpawnTransform.SetScale3D(FVector(1.0f, 1.0f, 1.0f));
+        
+		Points.Add(SpawnTransform);
 	}
 	return Points;
 }
@@ -77,11 +81,14 @@ void ADungeonRoomBase::SetRoomActive(bool bActive)
 
 void ADungeonRoomBase::OnTriggerOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (OtherActor->IsA(ACharacter::StaticClass())) 
+	if (const ACharacter* OverlappedCharacter = Cast<ACharacter>(OtherActor))
 	{
-		if (OnPlayerEnter.IsBound())
+		if (OverlappedCharacter->IsPlayerControlled())
 		{
-			OnPlayerEnter.Broadcast(this);
+			if (OnPlayerEnter.IsBound())
+			{
+				OnPlayerEnter.Broadcast(this);
+			}
 		}
 	}
 }

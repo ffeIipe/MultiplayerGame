@@ -18,6 +18,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Debug")
 	bool bDebugConnections = true;
 
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE void SetRequiredActivations(const int32 NewValue) { RequiredActivations = NewValue; }
+	
 	void ResetSources();
 
 protected:
@@ -26,7 +29,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Properties")
 	int32 RequiredActivations = 2;
 
-	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Properties")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Properties")
 	TArray<AActor*> LinkedTargets;
 
 	UPROPERTY(EditAnywhere, Category = "Properties")

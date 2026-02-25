@@ -34,6 +34,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "AI")
 	float SpawnCheckInterval = 2.0f;
 	
+	UPROPERTY(EditAnywhere, Category = "AI")
+	int32 ZombiesInitialAmount = 10;
+	
 	UPROPERTY()
 	TArray<ADungeonRoomBase*> GeneratedRooms;
 

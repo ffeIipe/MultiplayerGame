@@ -11,8 +11,4 @@ class COOPGAME_API UDungeonActivatorSpawner : public USceneComponent
 
 public:
 	UDungeonActivatorSpawner();
-
-#if WITH_EDITOR
-	virtual void OnRegister() override;
-#endif
 };

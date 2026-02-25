@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/Actor.h"
+#include "LevelInstance/LevelInstanceComponent.h"
 #include "ProceduralLevel/Components/DungeonExitComponent.h"
 #include "DungeonRoomBase.generated.h"
 
