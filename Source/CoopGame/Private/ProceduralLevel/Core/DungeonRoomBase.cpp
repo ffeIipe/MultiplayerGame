@@ -1,5 +1,6 @@
 #include "ProceduralLevel/Core/DungeonRoomBase.h"
 
+#include "Engine/LevelStreamingDynamic.h"
 #include "GameFramework/Character.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "ProceduralLevel/Components/DungeonEnemySpawner.h"
@@ -30,7 +31,20 @@ void ADungeonRoomBase::BeginPlay()
 {
 	Super::BeginPlay();
 	RoomTrigger->OnComponentBeginOverlap.AddDynamic(this, &ADungeonRoomBase::OnTriggerOverlap);
-    
+
+	if (!RoomLevel.IsNull())
+	{
+		bool bSuccess = false;
+		
+		StreamingLevel = ULevelStreamingDynamic::LoadLevelInstanceBySoftObjectPtr(
+			GetWorld(),
+			RoomLevel,
+			GetActorLocation(),
+			GetActorRotation(),
+			bSuccess
+		);
+	}
+	
 	SetRoomActive(true);
 }
 
@@ -74,9 +88,14 @@ TArray<FTransform> ADungeonRoomBase::GetSpawnPoints() const
 	return Points;
 }
 
-void ADungeonRoomBase::SetRoomActive(bool bActive)
+void ADungeonRoomBase::SetRoomActive(const bool bActive)
 {
 	SetActorHiddenInGame(!bActive);
+
+	if (StreamingLevel)
+	{
+		StreamingLevel->SetShouldBeVisible(bActive);
+	}
 }
 
 void ADungeonRoomBase::OnTriggerOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

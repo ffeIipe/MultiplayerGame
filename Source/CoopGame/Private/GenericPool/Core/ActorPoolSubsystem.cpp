@@ -48,7 +48,7 @@ AActor* UActorPoolSubsystem::GetActorFromPool(const TSubclassOf<AActor>& ClassTo
 		
 		ResultActor->SetActorHiddenInGame(false);
 		ResultActor->SetActorEnableCollision(true);
-		//ResultActor->SetActorTickEnabled(true);
+		ResultActor->SetActorTickEnabled(true);
 
 		if (ResultActor->Implements<UPoolableActor>())
 		{

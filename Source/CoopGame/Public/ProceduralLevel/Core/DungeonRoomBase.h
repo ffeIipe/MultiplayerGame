@@ -5,10 +5,10 @@
 #include "CoreMinimal.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/Actor.h"
-#include "LevelInstance/LevelInstanceComponent.h"
 #include "ProceduralLevel/Components/DungeonExitComponent.h"
 #include "DungeonRoomBase.generated.h"
 
+class ULevelStreamingDynamic;
 class UDungeonActivatorSpawner;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerEnterRoom, ADungeonRoomBase*, Room);
 
@@ -42,6 +42,12 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Dungeon Validation")
 	USceneComponent* EntranceMarker;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon Visuals")
+	TSoftObjectPtr<UWorld> RoomLevel;
+
+	UPROPERTY(Transient)
+	ULevelStreamingDynamic* StreamingLevel;
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Dungeon")

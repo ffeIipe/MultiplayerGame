@@ -18,12 +18,12 @@ void UCoopGameInstance::LoadSettings()
 	if (UGameUserSettings* UserSettings = GEngine->GetGameUserSettings())
 	{
 		UserSettings->SetTextureQuality(0);
-		UserSettings->SetShadowQuality(0);
+		UserSettings->SetShadowQuality(3);
 		UserSettings->SetAntiAliasingQuality(3);
 		UserSettings->SetViewDistanceQuality(0);
 		UserSettings->SetPostProcessingQuality(0);
 		UserSettings->SetVisualEffectQuality(0);
-		UserSettings->SetGlobalIlluminationQuality(0);
+		UserSettings->SetGlobalIlluminationQuality(4);
 		UserSettings->SetShadingQuality(0);
 		UserSettings->SetFrameRateLimit(0);
 		UserSettings->SetFoliageQuality(0);

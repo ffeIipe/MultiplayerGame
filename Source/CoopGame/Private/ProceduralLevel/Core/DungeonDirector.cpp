@@ -126,9 +126,9 @@ void ADungeonDirector::CleanupDeadZombies()
             continue;
         }
 
-        bool bIsDead = !Zombie->GetComponentByClass<UCoopHealthComponent>()->IsAlive();
+        const bool bIsAlive = Zombie->GetComponentByClass<UCoopHealthComponent>()->IsAlive();
 
-        if (bIsDead)
+        if (!bIsAlive)
         {
             if (PoolSubsystem) PoolSubsystem->ReturnToPool(Zombie);
             ActiveZombies.RemoveAt(i);
