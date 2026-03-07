@@ -52,8 +52,6 @@ void ACoopCharacter::Server_Attack_Implementation()
 	if (HealthComp)
 	{
 		HealthComp->TakeDamage(20.0f);
-        
-		UE_LOG(LogTemp, Warning, TEXT("El Servidor aplicó daño a %s"), *GetName());
 	}
 }
 

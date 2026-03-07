@@ -45,6 +45,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Team)
 	FGenericTeamId TeamId;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Input)
+	float Sensitivity;
+	
 	UFUNCTION(BlueprintCallable, Category = Team)
 	virtual FGenericTeamId GetGenericTeamId() const override;
 

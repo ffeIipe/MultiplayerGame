@@ -63,7 +63,7 @@ public:
 
 protected:
 	AActor* RetrieveActor(const UClass* ClassType);
-
+	
 private:
 	UPROPERTY()
 	TMap<UClass*, FPooledActorArray> InactivePools;

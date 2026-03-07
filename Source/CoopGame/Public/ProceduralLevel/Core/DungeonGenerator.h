@@ -127,9 +127,7 @@ protected:
     void ResetDungeon();
 
     void StartGeneration();
-    
-#if WITH_EDITOR
-    UFUNCTION(CallInEditor, Category = "Dungeon Debug")
-    void DebugResetDungeon();
-#endif
+
+    UFUNCTION(NetMulticast, Reliable)
+    void Multicast_NotifyGenerationFinished();
 };

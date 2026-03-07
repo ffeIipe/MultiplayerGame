@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,6 +5,7 @@
 #include "CoopHealthComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDownedStateChanged, bool, bNewIsDowned);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealthChanged, float, NewHealth);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class COOPGAME_API UCoopHealthComponent : public UActorComponent
@@ -40,6 +39,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	void Revive();
 
+	UFUNCTION(BlueprintCallable, Category = "Health")
+	void ResetStats();
+	
 	UFUNCTION(BlueprintPure, Category = "Health")
 	FORCEINLINE bool IsAlive() const { return CurrentHealth > 0; }
 	
@@ -48,6 +50,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnDownedStateChanged OnDownedStateChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnHealthChanged OnHealthChanged;
 	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

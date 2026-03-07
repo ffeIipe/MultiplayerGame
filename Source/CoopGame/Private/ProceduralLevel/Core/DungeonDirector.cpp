@@ -15,11 +15,17 @@ ADungeonDirector::ADungeonDirector()
 void ADungeonDirector::BeginPlay()
 {
     Super::BeginPlay();
-    GetWorldTimerManager().SetTimer(SpawnTimerHandle, this, &ADungeonDirector::ManageEnemySpawning, SpawnCheckInterval, true);
+    
+    if (HasAuthority())
+    {
+        GetWorldTimerManager().SetTimer(SpawnTimerHandle, this, &ADungeonDirector::ManageEnemySpawning, SpawnCheckInterval, true);
+    }
 }
 
 void ADungeonDirector::InitializeDungeon(TArray<ADungeonRoomBase*> AllRooms)
 {
+    if (!HasAuthority()) return;
+    
     GeneratedRooms = AllRooms;
 
     if (const UWorld* World = GetWorld())
@@ -105,10 +111,11 @@ void ADungeonDirector::SetRoomVisibilityRecursive(ADungeonRoomBase* Room, int32 
 
 void ADungeonDirector::CleanupDeadZombies()
 {
+    if (!HasAuthority()) return;
+    
     if (!IsValid(CurrentPlayerRoom)) return;
 
     FVector PlayerGeneralLocation = CurrentPlayerRoom->GetActorLocation();
-    const float MaxZombieDistance = 4000.0f;
 
     UActorPoolSubsystem* PoolSubsystem = nullptr;
     if (const UWorld* World = GetWorld())
@@ -126,12 +133,20 @@ void ADungeonDirector::CleanupDeadZombies()
             continue;
         }
 
-        const bool bIsAlive = Zombie->GetComponentByClass<UCoopHealthComponent>()->IsAlive();
+        bool bIsAlive = false;
+
+        if (const UCoopHealthComponent* HealthComponent = Zombie->GetComponentByClass<UCoopHealthComponent>())
+        {
+            bIsAlive = HealthComponent->IsAlive();
+        }
 
         if (!bIsAlive)
         {
             if (PoolSubsystem) PoolSubsystem->ReturnToPool(Zombie);
+            if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, ActiveZombies[i]->GetName() + "Is not alive...");
+
             ActiveZombies.RemoveAt(i);
+            
             continue;
         }
 
@@ -146,6 +161,8 @@ void ADungeonDirector::CleanupDeadZombies()
 
 void ADungeonDirector::ManageEnemySpawning()
 {
+    if (!HasAuthority()) return;
+    
     if (!IsValid(CurrentPlayerRoom) || ZombiesClasses.Num() <= 0) return;
 
     CleanupDeadZombies();
@@ -188,26 +205,11 @@ void ADungeonDirector::ManageEnemySpawning()
 
         ACharacter* NewZombie = nullptr;
 
-        // 3. OBTENER DEL POOL (En lugar de SpawnActor)
         if (PoolSubsystem)
         {
             NewZombie = Cast<ACharacter>(PoolSubsystem->GetActorFromPool(RandomClass, AvailableSpawns[i]));
         }
 
-        if (IsValid(NewZombie))
-        {
-            ActiveZombies.Add(NewZombie);
-            
-            if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
-            {
-                if (AActor* PlayerPawn = PC->GetPawn())
-                {
-                    if (AAgentController* ZombieAI = Cast<AAgentController>(NewZombie->GetController()))
-                    {
-                        ZombieAI->SetInitialTarget(PlayerPawn);
-                    }
-                }
-            }
-        }
+        ActiveZombies.Add(NewZombie);
     }
 }

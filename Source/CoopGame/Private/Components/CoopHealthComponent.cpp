@@ -30,6 +30,7 @@ void UCoopHealthComponent::TakeDamage(float DamageAmount)
 	if (!GetOwner()->HasAuthority() || bIsDowned) return;
 
 	CurrentHealth = FMath::Clamp(CurrentHealth - DamageAmount, 0.0f, MaxHealth);
+	OnRep_Health();
 
 	if (CurrentHealth <= 0.0f)
 	{
@@ -43,23 +44,31 @@ void UCoopHealthComponent::Revive()
 	if (!GetOwner()->HasAuthority()) return;
 
 	bIsDowned = false;
-	CurrentHealth = MaxHealth * 0.5f;
+
+	ResetStats();
+	
 	OnRep_IsDowned();
 }
 
+void UCoopHealthComponent::ResetStats()
+{
+	if (!GetOwner()->HasAuthority()) 
+	{
+		return;
+	}
+
+	CurrentHealth = MaxHealth;
+	bIsDowned = false;
+
+	OnRep_Health();
+	OnRep_IsDowned();
+}
 void UCoopHealthComponent::OnRep_Health()
 {
-	// Aquí podrías actualizar una barra de vida si quisieras
+	OnHealthChanged.Broadcast(CurrentHealth);
 }
 
 void UCoopHealthComponent::OnRep_IsDowned()
 {
 	OnDownedStateChanged.Broadcast(bIsDowned);
-	
-	// Debug visual rápido
-	/* if (bIsDowned)
-		UE_LOG(LogTemp, Warning, TEXT("ESTOY HERIDO! AYUDA!"));
-	else
-		UE_LOG(LogTemp, Warning, TEXT("ESTOY VIVO OTRA VEZ!"));
-	*/
 }

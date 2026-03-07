@@ -9,13 +9,11 @@ void APoolManager::InitializePool(const TSubclassOf<AActor> ActorClass, const in
 {
     if (!ActorClass)
     {
-        UE_LOG(LogTemp, Error, TEXT("PoolManager: You tried to initialize me with a null class."));
         return;
     }
 
     if (Pool.Num() > 0)
     {
-        UE_LOG(LogTemp, Warning, TEXT("PoolManager: The pool had already been initialized. Cleaning to avoid duplicates..."));
         Pool.Empty();
     }
 
@@ -37,8 +35,6 @@ void APoolManager::InitializePool(const TSubclassOf<AActor> ActorClass, const in
             Pool.Add(NewActor);
         }
     }
-    
-    UE_LOG(LogTemp, Log, TEXT("PoolManager: Initialized with %d instances of %s"), Pool.Num(), *ActorClass->GetName());
 }
 
 AActor* APoolManager::GetActorFromPool(FTransform SpawnTransform)
@@ -57,7 +53,6 @@ AActor* APoolManager::GetActorFromPool(FTransform SpawnTransform)
         }
     }
 
-    UE_LOG(LogTemp, Warning, TEXT("PoolManager: Pool out of instances!"));
     return nullptr;
 }
 

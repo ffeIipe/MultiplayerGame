@@ -5,6 +5,8 @@
 #include "InteractionSystem/Interfaces/SignalReceiver.h"
 #include "LogicGate.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnActivatorsGenerated);
+
 UCLASS()
 class COOPGAME_API ALogicGate : public AActor, public ISignalReceiver
 {
@@ -13,20 +15,25 @@ class COOPGAME_API ALogicGate : public AActor, public ISignalReceiver
 public:	
 	ALogicGate();
 
+	UPROPERTY(BlueprintAssignable, Category = "Logic Gate Events")
+	FOnActivatorsGenerated OnActivatorsGenerated;
+	
 	virtual void Tick(float DeltaTime) override;
 
 	UPROPERTY(EditAnywhere, Category = "Debug")
 	bool bDebugConnections = true;
 
 	UFUNCTION(BlueprintCallable)
-	FORCEINLINE void SetRequiredActivations(const int32 NewValue) { RequiredActivations = NewValue; }
+	void SetRequiredActivations(const int32 NewValue);
 	
 	void ResetSources();
 
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	
 protected:
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Properties")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing=OnRep_RequiredActivations ,Category = "Properties")
 	int32 RequiredActivations = 2;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Properties")
@@ -45,6 +52,9 @@ protected:
 
 	UPROPERTY(SaveGame)
 	bool bOutputState = false;
+
+	UFUNCTION()
+	void OnRep_RequiredActivations();
 
 #if WITH_EDITOR
 	virtual bool ShouldTickIfViewportsOnly() const override;

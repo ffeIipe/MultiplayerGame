@@ -2,10 +2,13 @@
 #include "DrawDebugHelpers.h"
 #include "InteractionSystem/Interfaces/Interactable.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Net/UnrealNetwork.h"
 
 ALogicGate::ALogicGate()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
+
+	bReplicates = true;
 }
 
 void ALogicGate::Tick(float DeltaTime)
@@ -32,6 +35,15 @@ void ALogicGate::Tick(float DeltaTime)
 	}
 }
 
+void ALogicGate::SetRequiredActivations(const int32 NewValue)
+{
+	if (HasAuthority())
+	{
+		RequiredActivations = NewValue;
+		OnRep_RequiredActivations();
+	}
+}
+
 void ALogicGate::ResetSources()
 {
 	TArray<AActor*> SourcesToReset = ActiveSources.Array();
@@ -49,6 +61,13 @@ void ALogicGate::ResetSources()
 	UpdateLogicState();
 }
 
+void ALogicGate::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ALogicGate, RequiredActivations);
+}
+
 void ALogicGate::BeginPlay()
 {
 	Super::BeginPlay();
@@ -61,6 +80,14 @@ bool ALogicGate::ShouldTickIfViewportsOnly() const
 	return bDebugConnections;
 }
 #endif
+
+void ALogicGate::OnRep_RequiredActivations()
+{
+	if (OnActivatorsGenerated.IsBound())
+	{
+		OnActivatorsGenerated.Broadcast();
+	}
+}
 
 void ALogicGate::ReceiveSignal_Implementation(const bool bActive, AActor* Activator)
 {
@@ -108,6 +135,4 @@ void ALogicGate::BroadcastToTargets(const bool bActive)
 	}
 
 	GetWorld()->GetTimerManager().ClearTimer(DeactivationTimerHandle);
-	
-	if (bActive) DrawDebugString(GetWorld(), GetActorLocation(), "GATE OPEN", nullptr, FColor::Green, 2.0f);
 }

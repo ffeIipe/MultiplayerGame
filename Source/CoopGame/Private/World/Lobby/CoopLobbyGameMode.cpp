@@ -22,7 +22,6 @@ void ACoopLobbyGameMode::StartGame()
 {
 	if (GetNumPlayers() < MinPlayersToStart)
 	{
-		UE_LOG(LogTemp, Error, TEXT("No se puede iniciar. Faltan jugadores."));
 		return; 
 	}
 

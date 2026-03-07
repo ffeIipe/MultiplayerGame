@@ -30,8 +30,8 @@ void ACoopPlayerController::Look(const FInputActionValue& Value)
 
 	if (GetPawn())
 	{
-		GetPawn()->AddControllerYawInput(LookAxisVector.X);
-		GetPawn()->AddControllerPitchInput(LookAxisVector.Y);
+		GetPawn()->AddControllerYawInput(LookAxisVector.X * Sensitivity);
+		GetPawn()->AddControllerPitchInput(LookAxisVector.Y * Sensitivity);
 	}
 }
 

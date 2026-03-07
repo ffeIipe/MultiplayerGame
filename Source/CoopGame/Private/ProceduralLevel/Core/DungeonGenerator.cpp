@@ -46,13 +46,11 @@ void ADungeonGenerator::StepGeneration()
 
         if (!bExitSpawned)
         {
-            UE_LOG(LogTemp, Error, TEXT("Dungeon Invalida: No se pudo generar una SALIDA."));
             bIsValidDungeon = false;
         }
 
         if (CurrentRoomCount < MinRoomsToValidate)
         {
-             UE_LOG(LogTemp, Error, TEXT("Dungeon Invalida: Muy pocos cuartos (%d/%d)."), CurrentRoomCount, MinRoomsToValidate);
              bIsValidDungeon = false;
         }
 
@@ -68,10 +66,8 @@ void ADungeonGenerator::StepGeneration()
                 GetWorld()->GetTimerManager().SetTimer(RetryHandle, this, &ADungeonGenerator::StartGeneration, 0.1f, false);
                 return;
             }
-            UE_LOG(LogTemp, Fatal, TEXT("Dungeon Generator: Se alcanzo el limite de reintentos (%d). Revisa tus parametros de generacion."), MaxGenerationRetries);
         }
         
-        UE_LOG(LogTemp, Display, TEXT("Dungeon Generada y Validada Correctamente. Finalizando..."));
 
         for (const FPendingExit& Exit : PendingExits)
         {
@@ -121,10 +117,8 @@ void ADungeonGenerator::StepGeneration()
             DungeonDirector->InitializeDungeon(GeneratedRooms);
         }
         
-        if (OnGenerationFinished.IsBound())
-        {
-            OnGenerationFinished.Broadcast();
-        }
+        Multicast_NotifyGenerationFinished();
+        
         return;
     }
 
@@ -147,19 +141,11 @@ void ADungeonGenerator::StepGeneration()
 
     DrawDebugLine(GetWorld(), StartLocation, Transform.GetLocation(), FColor::Red, false, 2.0f, 0, 5.0f);
 
-    /*if (GEngine)
-    {
-        FString DebugMsg = FString::Printf(TEXT("Dist: %.0f / %.0f | Rooms: %d / %d | Exit: %s"), 
-            DistToStart, MinExitDistance, CurrentRoomCount, MinRoomsBeforeExit, bExitSpawned ? TEXT("YES") : TEXT("NO"));
-        GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, DebugMsg);
-    }*/
-
     const bool bExitConditionsMet = (!bExitSpawned && DistToStart >= MinExitDistance && CurrentRoomCount >= MinRoomsBeforeExit)
                               || bForceExitPhase;
 
     if (bExitConditionsMet)
     {
-        UE_LOG(LogTemp, Warning, TEXT("Attempting Exit Room Spawn..."));
         if (TrySpawnExitRoom(Transform))
         {
             return;
@@ -380,7 +366,6 @@ bool ADungeonGenerator::TrySpawnExitRoom(const FTransform& ExitTransform)
                 }
             }
             
-            UE_LOG(LogTemp, Warning, TEXT("EXIT ROOM SPAWNED at distance: %f"), FVector::Dist(StartLocation, NewRoom->GetActorLocation()));
             return true;
         }
     }
@@ -410,8 +395,6 @@ void ADungeonGenerator::ResetDungeon()
     ActivatorSpawnersLocations.Empty();
     GeneratedRooms.Empty();
     PendingExits.Empty();
-    
-    UE_LOG(LogTemp, Warning, TEXT("[DungeonGenerator] Validacion fallida. Reiniciando generacion (Intento %d/%d)..."), CurrentRetries + 1, MaxGenerationRetries);
 }
 
 void ADungeonGenerator::StartGeneration()
@@ -442,11 +425,10 @@ void ADungeonGenerator::StartGeneration()
     }
 }
 
-#if WITH_EDITOR
-
-void ADungeonGenerator::DebugResetDungeon()
+void ADungeonGenerator::Multicast_NotifyGenerationFinished_Implementation()
 {
-    UE_LOG(LogTemp, Log, TEXT("Reset logic would go here."));
+    if (OnGenerationFinished.IsBound())
+    {
+        OnGenerationFinished.Broadcast();
+    }
 }
-#endif
-

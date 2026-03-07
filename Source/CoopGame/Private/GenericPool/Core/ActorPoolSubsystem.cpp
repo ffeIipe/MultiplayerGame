@@ -10,10 +10,6 @@ void UActorPoolSubsystem::ReturnToPool(AActor* ActorToReturn)
 		IPoolableActor::Execute_OnPoolDeactivate(ActorToReturn);
 	}
 
-	ActorToReturn->SetActorHiddenInGame(true);
-	ActorToReturn->SetActorEnableCollision(false);
-	ActorToReturn->SetActorTickEnabled(false);
-
 	InactivePools.FindOrAdd(ActorToReturn->GetClass()).Actors.Push(ActorToReturn);
 }
 
@@ -48,7 +44,6 @@ AActor* UActorPoolSubsystem::GetActorFromPool(const TSubclassOf<AActor>& ClassTo
 		
 		ResultActor->SetActorHiddenInGame(false);
 		ResultActor->SetActorEnableCollision(true);
-		ResultActor->SetActorTickEnabled(true);
 
 		if (ResultActor->Implements<UPoolableActor>())
 		{
@@ -89,9 +84,6 @@ AActor* UActorPoolSubsystem::RetrieveActor(const UClass* ClassType)
 		{
 			if (AActor* Candidate = PoolStruct->Actors.Pop(); IsValid(Candidate))
 			{
-				Candidate->SetActorHiddenInGame(false);
-				Candidate->SetActorEnableCollision(true);
-				Candidate->SetActorTickEnabled(true);
 				return Candidate;
 			}
 		}

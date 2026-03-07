@@ -37,6 +37,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "AI")
 	int32 ZombiesInitialAmount = 10;
 	
+	UPROPERTY(EditAnywhere, Category = "AI")
+	float MaxZombieDistance = 10000.f;
+
 	UPROPERTY()
 	TArray<ADungeonRoomBase*> GeneratedRooms;
 
